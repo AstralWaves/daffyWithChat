@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daffy Chat - Chat Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">💬 Daffy Chat</div>
+                <div class="user-info" id="userInfo">
+                    <img id="userAvatar" class="avatar" src="../assets/default-avatar.png" alt="Avatar">
+                    <div class="user-meta">
+                        <strong id="userName">Loading...</strong>
+                        <small id="userStatus">Status</small>
+                    </div>
+                    <button id="logoutBtn" class="logout-btn" title="Logout">🚪</button>
+                </div>
+            </div>
+            
+            <div class="search-bar">
+                <input type="text" id="searchUsers" placeholder="🔍 Search users...">
+            </div>
+            
+            <div class="conversations-list" id="conversationsList">
+                <!-- Dynamic conversations will appear here -->
+            </div>
+        </aside>
+        
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <div class="chat-header" id="chatHeader">
+                <div class="chat-user-info">
+                    <img id="chatAvatar" class="avatar" src="../assets/default-avatar.png" alt="Avatar">
+                    <div>
+                        <strong id="chatUserName">Select a chat</strong>
+                        <small id="chatUserStatus">Offline</small>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button id="audioCallBtn" class="action-btn" title="Audio Call">🎵</button>
+                    <button id="videoCallBtn" class="action-btn" title="Video Call">📹</button>
+                    <button id="infoBtn" class="action-btn" title="Info">ℹ️</button>
+                </div>
+            </div>
+            
+            <div class="messages-container" id="messagesContainer">
+                <div class="messages-list" id="messagesList">
+                    <!-- Messages will appear here -->
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                <span>Someone is typing...</span>
+            </div>
+            
+            <div class="message-input">
+                <div class="input-actions">
+                    <button id="emojiBtn" class="input-btn">😊</button>
+                    <button id="attachBtn" class="input-btn">📎</button>
+                </div>
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button id="sendBtn" class="send-btn">Send</button>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Video Call Modal -->
+    <div id="videoCallModal" class="modal" style="display: none;">
+        <div class="modal-content fullscreen">
+            <div class="video-container">
+                <video id="localVideo" autoplay muted class="local-video"></video>
+                <video id="remoteVideo" autoplay class="remote-video"></video>
+                <div class="call-controls">
+                    <button id="toggleMic" class="call-btn">🎤</button>
+                    <button id="toggleVideo" class="call-btn">📹</button>
+                    <button id="endCall" class="call-btn end-call">📞</button>
+                    <button id="screenShare" class="call-btn">🖥️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../js/utils/helpers.js"></script>
+    <script src="../js/websocket/connection.js"></script>
+    <script src="../js/calls/video-call.js"></script>
+    <script src="../js/chat/chat-ui.js"></script>
+</body>
+</html>

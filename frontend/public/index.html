@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daffy Chat - Real-time Communication Platform</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .hero p {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            max-width: 600px;
+            opacity: 0.9;
+        }
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+        }
+        .btn-large {
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-white {
+            background: white;
+            color: var(--primary-color);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+        .btn-large:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="logo">💬 Daffy Chat</div>
+        <h1>Connect with Anyone, Anywhere.</h1>
+        <p>A fast, secure, and modern real-time communication platform with video calls, instant messaging, and group chats.</p>
+        
+        <div class="cta-buttons">
+            <a href="../pages/login.html" class="btn-large btn-white">Get Started</a>
+            <a href="../pages/register.html" class="btn-large btn-outline">Create Account</a>
+        </div>
+    </div>
+
+    <script>
+        // Redirect if already logged in
+        if (localStorage.getItem('access_token')) {
+            window.location.href = '../pages/chat.html';
+        }
+    </script>
+</body>
+</html>
