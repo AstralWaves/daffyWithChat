@@ -12,6 +12,7 @@ export default function CallModal({ state, me, onAccept, onEnd, sendWs }) {
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
   const [status, setStatus] = useState(mode === "incoming" ? "Incoming…" : mode === "outgoing" ? "Calling…" : "Connecting…");
+  const [mediaError, setMediaError] = useState(null);
   const localRef = useRef(null);
   const remoteRef = useRef(null);
   const pcRef = useRef(null);
@@ -57,8 +58,8 @@ export default function CallModal({ state, me, onAccept, onEnd, sendWs }) {
       try {
         localStream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (err) {
-        alert("Could not access mic/camera: " + err.message);
-        onEnd();
+        setMediaError(err?.message || "Permission denied");
+        setStatus("No mic/camera access");
         return;
       }
       if (cancelled) {
@@ -170,7 +171,12 @@ export default function CallModal({ state, me, onAccept, onEnd, sendWs }) {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
         {/* Remote video / avatar */}
         <div className="lg:col-span-2 relative bg-forest rounded-3xl overflow-hidden flex items-center justify-center">
-          {kind === "video" ? (
+          {mediaError ? (
+            <div className="text-center p-8" data-testid="call-media-error">
+              <div className="text-sand text-xl font-heading mb-2">Can't access mic/camera</div>
+              <div className="text-sand/70 text-sm max-w-sm">{mediaError}. Please grant permission and try again.</div>
+            </div>
+          ) : kind === "video" ? (
             <video ref={remoteRef} autoPlay playsInline className="w-full h-full object-cover" data-testid="remote-video" />
           ) : (
             <div className="text-center">
