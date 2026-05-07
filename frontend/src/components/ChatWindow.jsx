@@ -5,6 +5,25 @@ import { Avatar } from "./Sidebar";
 const EMPTY_IMG =
   "https://images.unsplash.com/photo-1760622728583-b51cf72e9987?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwemVuJTIwZ2FyZGVuJTIwY2FsbSUyMGVtcHR5fGVufDB8fHx8MTc3ODE4Njg5OHww&ixlib=rb-4.1.0&q=85";
 
+function sameDay(a, b) {
+  if (!a || !b) return false;
+  const da = new Date(a), db = new Date(b);
+  return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+}
+
+function dateLabel(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yest = new Date(today); yest.setDate(today.getDate() - 1);
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (dDay.getTime() === today.getTime()) return "Today";
+  if (dDay.getTime() === yest.getTime()) return "Yesterday";
+  const days = (today - dDay) / (1000 * 60 * 60 * 24);
+  if (days < 7) return d.toLocaleDateString([], { weekday: "long" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function ChatWindow({ user, conversation, messages, presence, typingUsers, onSend, onTyping, onCall }) {
   const [text, setText] = useState("");
   const [media, setMedia] = useState(null);
@@ -114,12 +133,20 @@ export default function ChatWindow({ user, conversation, messages, presence, typ
           const prev = messages[i - 1];
           const showAvatar = !mine && (!prev || prev.sender_id !== m.sender_id);
           const readByOthers = m.read_by.filter((id) => id !== user.id).length > 0;
+          const showDateSep = !prev || !sameDay(prev.created_at, m.created_at);
           return (
-            <div
-              key={m.id}
-              data-testid={`message-${m.id}`}
-              className={`flex anim-msg ${mine ? "justify-end" : "justify-start"} items-end gap-2`}
-            >
+            <React.Fragment key={m.id}>
+              {showDateSep && (
+                <div className="flex items-center justify-center my-2">
+                  <span className="text-[10px] uppercase tracking-[0.25em] text-muted bg-bordr/40 px-3 py-1 rounded-full">
+                    {dateLabel(m.created_at)}
+                  </span>
+                </div>
+              )}
+              <div
+                data-testid={`message-${m.id}`}
+                className={`flex anim-msg ${mine ? "justify-end" : "justify-start"} items-end gap-2`}
+              >
               {!mine && (
                 <div className="w-8">
                   {showAvatar && <Avatar name={m.sender_name} size={28} />}
@@ -147,6 +174,7 @@ export default function ChatWindow({ user, conversation, messages, presence, typ
                 </div>
               </div>
             </div>
+            </React.Fragment>
           );
         })}
         {typingUsers.length > 0 && (

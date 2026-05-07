@@ -55,6 +55,7 @@ def public_user(user: dict) -> dict:
         "username": user["username"],
         "name": user.get("name", user["username"]),
         "avatar": user.get("avatar"),
+        "bio": user.get("bio"),
         "online": user.get("online", False),
         "last_seen": user.get("last_seen"),
     }
@@ -104,6 +105,16 @@ class MessageIn(BaseModel):
     content: str = ""
     media: Optional[str] = None  # base64 data url
     media_type: Optional[str] = None  # "image"
+
+
+class FriendRequestIn(BaseModel):
+    target_user_id: str
+
+
+class ProfileUpdateIn(BaseModel):
+    name: Optional[str] = None
+    bio: Optional[str] = None
+    avatar: Optional[str] = None  # base64 data URL
 
 
 # ---------------------- WS Manager ----------------------
@@ -168,6 +179,9 @@ async def lifespan(app: FastAPI):
     await db.conversations.create_index("id", unique=True)
     await db.messages.create_index([("conversation_id", 1), ("created_at", 1)])
     await db.messages.create_index("id", unique=True)
+    await db.friendships.create_index("users")
+    await db.friend_requests.create_index([("from_user_id", 1), ("to_user_id", 1)])
+    await db.friend_requests.create_index("to_user_id")
 
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@example.com")
@@ -272,7 +286,9 @@ async def search_users(q: str = "", user=Depends(get_current_user)):
     results = []
     async for u in cursor:
         u["online"] = manager.is_online(u["id"])
-        results.append(public_user(u))
+        pu = public_user(u)
+        pu["friendship_status"] = await friendship_status(user["id"], u["id"])
+        results.append(pu)
     return results
 
 
@@ -456,6 +472,153 @@ async def websocket_endpoint(ws: WebSocket, token: str = ""):
 @api.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+# ---------------------- Profile ----------------------
+@api.patch("/users/me")
+async def update_profile(payload: ProfileUpdateIn, user=Depends(get_current_user)):
+    update = {}
+    if payload.name is not None:
+        update["name"] = payload.name.strip() or user["username"]
+    if payload.bio is not None:
+        update["bio"] = payload.bio.strip()
+    if payload.avatar is not None:
+        update["avatar"] = payload.avatar
+    if not update:
+        return public_user(user)
+    await db.users.update_one({"id": user["id"]}, {"$set": update})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0})
+    return public_user(fresh)
+
+
+# ---------------------- Friends ----------------------
+async def friendship_status(me_id: str, other_id: str) -> str:
+    """Returns: 'none' | 'pending_out' | 'pending_in' | 'friends'"""
+    if me_id == other_id:
+        return "self"
+    fr = await db.friendships.find_one({
+        "users": {"$all": [me_id, other_id]}
+    })
+    if fr:
+        return "friends"
+    out = await db.friend_requests.find_one({"from_user_id": me_id, "to_user_id": other_id, "status": "pending"})
+    if out:
+        return "pending_out"
+    inc = await db.friend_requests.find_one({"from_user_id": other_id, "to_user_id": me_id, "status": "pending"})
+    if inc:
+        return "pending_in"
+    return "none"
+
+
+@api.post("/friends/request")
+async def send_friend_request(payload: FriendRequestIn, user=Depends(get_current_user)):
+    if payload.target_user_id == user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot send request to yourself")
+    target = await db.users.find_one({"id": payload.target_user_id})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    status_str = await friendship_status(user["id"], payload.target_user_id)
+    if status_str == "friends":
+        raise HTTPException(status_code=400, detail="Already friends")
+    if status_str == "pending_out":
+        raise HTTPException(status_code=400, detail="Request already sent")
+    if status_str == "pending_in":
+        # auto-accept
+        return await accept_friend_request_internal(user, payload.target_user_id)
+    req = {
+        "id": str(uuid.uuid4()),
+        "from_user_id": user["id"],
+        "to_user_id": payload.target_user_id,
+        "status": "pending",
+        "created_at": now_iso(),
+    }
+    await db.friend_requests.insert_one(req)
+    req.pop("_id", None)
+    # notify target
+    await manager.send_to_user(payload.target_user_id, {
+        "type": "friend_request_new",
+        "request": req,
+        "from_user": public_user(user),
+    })
+    return {"status": "pending_out", "request": req}
+
+
+async def accept_friend_request_internal(me: dict, other_id: str):
+    req = await db.friend_requests.find_one({
+        "from_user_id": other_id, "to_user_id": me["id"], "status": "pending"
+    })
+    if not req:
+        raise HTTPException(status_code=404, detail="No pending request")
+    await db.friend_requests.update_one({"id": req["id"]}, {"$set": {"status": "accepted", "accepted_at": now_iso()}})
+    fr = {
+        "id": str(uuid.uuid4()),
+        "users": sorted([me["id"], other_id]),
+        "created_at": now_iso(),
+    }
+    await db.friendships.insert_one(fr)
+    fr.pop("_id", None)
+    other = await db.users.find_one({"id": other_id}, {"_id": 0})
+    # notify both sides
+    await manager.send_to_user(other_id, {
+        "type": "friend_request_accepted",
+        "by_user": public_user(me),
+    })
+    return {"status": "friends", "user": public_user(other) if other else None}
+
+
+@api.post("/friends/accept")
+async def accept_friend_request(payload: FriendRequestIn, user=Depends(get_current_user)):
+    return await accept_friend_request_internal(user, payload.target_user_id)
+
+
+@api.post("/friends/reject")
+async def reject_friend_request(payload: FriendRequestIn, user=Depends(get_current_user)):
+    res = await db.friend_requests.update_one(
+        {"from_user_id": payload.target_user_id, "to_user_id": user["id"], "status": "pending"},
+        {"$set": {"status": "rejected"}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="No pending request")
+    return {"status": "rejected"}
+
+
+@api.delete("/friends/{friend_id}")
+async def remove_friend(friend_id: str, user=Depends(get_current_user)):
+    await db.friendships.delete_many({"users": {"$all": [user["id"], friend_id]}})
+    return {"ok": True}
+
+
+@api.get("/friends")
+async def list_friends(user=Depends(get_current_user)):
+    cursor = db.friendships.find({"users": user["id"]}, {"_id": 0})
+    friend_ids = []
+    async for f in cursor:
+        for uid in f["users"]:
+            if uid != user["id"]:
+                friend_ids.append(uid)
+    if not friend_ids:
+        return []
+    friends = []
+    async for u in db.users.find({"id": {"$in": friend_ids}}, {"_id": 0}):
+        u["online"] = manager.is_online(u["id"])
+        friends.append(public_user(u))
+    return friends
+
+
+@api.get("/friends/requests")
+async def list_friend_requests(user=Depends(get_current_user)):
+    cursor = db.friend_requests.find({"to_user_id": user["id"], "status": "pending"}, {"_id": 0}).sort("created_at", -1)
+    out = []
+    async for r in cursor:
+        u = await db.users.find_one({"id": r["from_user_id"]}, {"_id": 0})
+        if u:
+            out.append({"request": r, "from_user": public_user(u)})
+    return out
+
+
+@api.get("/friends/status/{other_id}")
+async def get_friendship_status(other_id: str, user=Depends(get_current_user)):
+    return {"status": await friendship_status(user["id"], other_id)}
 
 
 app.include_router(api)

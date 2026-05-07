@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, LogOut, Users, X } from "lucide-react";
+import { Search, Plus, LogOut, Users, X, UserCircle } from "lucide-react";
 import { api } from "../api";
 import { useAuth } from "../AuthContext";
+import FriendsModal from "./FriendsModal";
+import ProfileModal from "./ProfileModal";
 
 const AVATAR_COLORS = [
   ["#C85A47", "#F9F8F6"],
@@ -139,8 +141,10 @@ function NewChatModal({ onClose, onStartConversation, currentUserId }) {
   );
 }
 
-export default function Sidebar({ user, conversations, activeId, presence, onOpen, onStartConversation }) {
+export default function Sidebar({ user, conversations, activeId, presence, onOpen, onStartConversation, onUserUpdated, friendRequestsCount }) {
   const [showNew, setShowNew] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const { logout } = useAuth();
   const [filter, setFilter] = useState("");
 
@@ -153,14 +157,31 @@ export default function Sidebar({ user, conversations, activeId, presence, onOpe
     <aside className="w-[360px] flex-shrink-0 bg-sidebar border-r border-bordr flex flex-col" data-testid="sidebar">
       {/* Header */}
       <div className="p-6 pb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <button
+          data-testid="open-profile-button"
+          onClick={() => setShowProfile(true)}
+          className="flex items-center gap-3 group min-w-0"
+        >
           <Avatar name={user.name} online src={user.avatar} size={42} />
-          <div>
+          <div className="text-left min-w-0">
             <div className="text-xs uppercase tracking-[0.2em] text-muted font-semibold">Signed in</div>
-            <div className="font-heading font-medium text-base text-ink truncate max-w-[160px]" data-testid="current-username">{user.name}</div>
+            <div className="font-heading font-medium text-base text-ink truncate max-w-[160px] group-hover:text-terracotta transition" data-testid="current-username">{user.name}</div>
           </div>
-        </div>
+        </button>
         <div className="flex items-center gap-1">
+          <button
+            data-testid="open-friends-button"
+            onClick={() => setShowFriends(true)}
+            className="relative w-9 h-9 rounded-full hover:bg-bordr text-ink flex items-center justify-center transition"
+            title="Friends"
+          >
+            <UserCircle size={18} strokeWidth={1.6} />
+            {friendRequestsCount > 0 && (
+              <span data-testid="friend-requests-badge" className="absolute -top-0.5 -right-0.5 bg-terracotta text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {friendRequestsCount}
+              </span>
+            )}
+          </button>
           <button
             data-testid="new-chat-button"
             onClick={() => setShowNew(true)}
@@ -252,6 +273,20 @@ export default function Sidebar({ user, conversations, activeId, presence, onOpe
           onClose={() => setShowNew(false)}
           onStartConversation={onStartConversation}
           currentUserId={user.id}
+        />
+      )}
+      {showFriends && (
+        <FriendsModal
+          onClose={() => setShowFriends(false)}
+          onStartChat={onStartConversation}
+          currentUser={user}
+        />
+      )}
+      {showProfile && (
+        <ProfileModal
+          user={user}
+          onClose={() => setShowProfile(false)}
+          onUpdated={onUserUpdated}
         />
       )}
     </aside>

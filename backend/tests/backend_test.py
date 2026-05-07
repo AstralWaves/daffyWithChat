@@ -239,3 +239,209 @@ async def test_websocket_typing_and_call_signaling():
         ev = json.loads(raw)
         assert ev["type"] == "call_offer"
         assert ev["from_user_id"] == state["alice_id"]
+
+
+
+# ---- Profile (PATCH /api/users/me) ----
+def test_update_profile_name_bio_avatar():
+    avatar_b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+    payload = {"name": "Alice Updated", "bio": "Hello I am Alice", "avatar": avatar_b64}
+    r = requests.patch(f"{BASE_URL}/api/users/me", json=payload,
+                       headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["name"] == "Alice Updated"
+    assert data["bio"] == "Hello I am Alice"
+    assert data["avatar"] == avatar_b64
+    # Verify GET /me returns persisted values
+    r2 = requests.get(f"{BASE_URL}/api/auth/me",
+                      headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r2.status_code == 200
+    me = r2.json()
+    assert me["name"] == "Alice Updated"
+    assert me["bio"] == "Hello I am Alice"
+    assert me["avatar"] == avatar_b64
+
+
+def test_update_profile_partial():
+    r = requests.patch(f"{BASE_URL}/api/users/me", json={"bio": "Just bio"},
+                       headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200
+    assert r.json()["bio"] == "Just bio"
+    # name should remain
+    assert r.json()["name"] == "Alice Updated"
+
+
+def test_update_profile_unauth():
+    r = requests.patch(f"{BASE_URL}/api/users/me", json={"bio": "x"})
+    assert r.status_code == 401
+
+
+# ---- Friends ----
+def test_friends_status_initial_none():
+    r = requests.get(f"{BASE_URL}/api/friends/status/{state['bob_id']}",
+                     headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200
+    assert r.json()["status"] == "none"
+
+
+def test_friend_request_send():
+    r = requests.post(f"{BASE_URL}/api/friends/request",
+                      json={"target_user_id": state["bob_id"]},
+                      headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "pending_out"
+
+
+def test_friend_request_duplicate_send():
+    r = requests.post(f"{BASE_URL}/api/friends/request",
+                      json={"target_user_id": state["bob_id"]},
+                      headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 400
+
+
+def test_friend_request_to_self():
+    r = requests.post(f"{BASE_URL}/api/friends/request",
+                      json={"target_user_id": state["alice_id"]},
+                      headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 400
+
+
+def test_friends_status_pending_in_for_bob():
+    r = requests.get(f"{BASE_URL}/api/friends/status/{state['alice_id']}",
+                     headers={"Authorization": f"Bearer {state['bob_token']}"})
+    assert r.json()["status"] == "pending_in"
+
+
+def test_friends_status_pending_out_for_alice():
+    r = requests.get(f"{BASE_URL}/api/friends/status/{state['bob_id']}",
+                     headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.json()["status"] == "pending_out"
+
+
+def test_list_friend_requests_for_bob():
+    r = requests.get(f"{BASE_URL}/api/friends/requests",
+                     headers={"Authorization": f"Bearer {state['bob_token']}"})
+    assert r.status_code == 200
+    reqs = r.json()
+    assert any(item["from_user"]["id"] == state["alice_id"] for item in reqs)
+
+
+def test_search_includes_friendship_status():
+    r = requests.get(f"{BASE_URL}/api/users/search", params={"q": BOB["username"]},
+                     headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200
+    bob_entry = next(u for u in r.json() if u["id"] == state["bob_id"])
+    assert "friendship_status" in bob_entry
+    assert bob_entry["friendship_status"] == "pending_out"
+
+
+def test_friend_request_accept():
+    r = requests.post(f"{BASE_URL}/api/friends/accept",
+                      json={"target_user_id": state["alice_id"]},
+                      headers={"Authorization": f"Bearer {state['bob_token']}"})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "friends"
+
+
+def test_friends_list_after_accept():
+    r = requests.get(f"{BASE_URL}/api/friends",
+                     headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200
+    friends = r.json()
+    assert any(f["id"] == state["bob_id"] for f in friends)
+
+
+def test_friends_status_friends():
+    r = requests.get(f"{BASE_URL}/api/friends/status/{state['bob_id']}",
+                     headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.json()["status"] == "friends"
+
+
+def test_search_friendship_status_friends():
+    r = requests.get(f"{BASE_URL}/api/users/search", params={"q": BOB["username"]},
+                     headers={"Authorization": f"Bearer {state['alice_token']}"})
+    bob_entry = next(u for u in r.json() if u["id"] == state["bob_id"])
+    assert bob_entry["friendship_status"] == "friends"
+
+
+def test_friend_auto_accept_on_mutual_request():
+    # Create two new users, charlie sends to dave, dave sends back -> auto-accept
+    c = {"email": f"test_charlie_{UNIQUE}@test.com", "username": f"test_charlie_{UNIQUE}",
+         "password": "password123", "name": "Charlie"}
+    d = {"email": f"test_dave_{UNIQUE}@test.com", "username": f"test_dave_{UNIQUE}",
+         "password": "password123", "name": "Dave"}
+    rc = requests.post(f"{BASE_URL}/api/auth/register", json=c).json()
+    rd = requests.post(f"{BASE_URL}/api/auth/register", json=d).json()
+    # charlie -> dave
+    r1 = requests.post(f"{BASE_URL}/api/friends/request",
+                       json={"target_user_id": rd["user"]["id"]},
+                       headers={"Authorization": f"Bearer {rc['token']}"})
+    assert r1.json()["status"] == "pending_out"
+    # dave -> charlie => auto-accept
+    r2 = requests.post(f"{BASE_URL}/api/friends/request",
+                       json={"target_user_id": rc["user"]["id"]},
+                       headers={"Authorization": f"Bearer {rd['token']}"})
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["status"] == "friends"
+
+
+def test_remove_friend():
+    r = requests.delete(f"{BASE_URL}/api/friends/{state['bob_id']}",
+                        headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r.status_code == 200
+    # status should be 'none' now
+    r2 = requests.get(f"{BASE_URL}/api/friends/status/{state['bob_id']}",
+                      headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r2.json()["status"] == "none"
+
+
+def test_friend_request_reject_flow():
+    # bob sends to alice (now removed), alice rejects
+    r1 = requests.post(f"{BASE_URL}/api/friends/request",
+                       json={"target_user_id": state["alice_id"]},
+                       headers={"Authorization": f"Bearer {state['bob_token']}"})
+    assert r1.status_code == 200
+    assert r1.json()["status"] == "pending_out"
+    r2 = requests.post(f"{BASE_URL}/api/friends/reject",
+                       json={"target_user_id": state["bob_id"]},
+                       headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r2.status_code == 200
+    assert r2.json()["status"] == "rejected"
+    # second reject -> 404
+    r3 = requests.post(f"{BASE_URL}/api/friends/reject",
+                       json={"target_user_id": state["bob_id"]},
+                       headers={"Authorization": f"Bearer {state['alice_token']}"})
+    assert r3.status_code == 404
+
+
+# ---- WS friend_request_new event ----
+@pytest.mark.asyncio
+async def test_ws_friend_request_event():
+    # Create two new users so we don't pollute prior state
+    e = {"email": f"test_eve_{UNIQUE}@test.com", "username": f"test_eve_{UNIQUE}",
+         "password": "password123", "name": "Eve"}
+    f = {"email": f"test_frank_{UNIQUE}@test.com", "username": f"test_frank_{UNIQUE}",
+         "password": "password123", "name": "Frank"}
+    re = requests.post(f"{BASE_URL}/api/auth/register", json=e).json()
+    rf = requests.post(f"{BASE_URL}/api/auth/register", json=f).json()
+    eve_url = f"{WS_URL}?token={re['token']}"
+    async with websockets.connect(eve_url) as ws:
+        await asyncio.sleep(0.3)
+        # Frank sends request to Eve via REST
+        rr = requests.post(f"{BASE_URL}/api/friends/request",
+                           json={"target_user_id": re["user"]["id"]},
+                           headers={"Authorization": f"Bearer {rf['token']}"})
+        assert rr.status_code == 200
+        got = False
+        try:
+            for _ in range(5):
+                raw = await asyncio.wait_for(ws.recv(), timeout=3)
+                msg = json.loads(raw)
+                if msg.get("type") == "friend_request_new":
+                    assert msg["from_user"]["id"] == rf["user"]["id"]
+                    got = True
+                    break
+        except asyncio.TimeoutError:
+            pass
+        assert got, "Did not receive friend_request_new"

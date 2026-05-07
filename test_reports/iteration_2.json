@@ -1,0 +1,44 @@
+{
+  "summary": "Iteration 2 testing complete. Backend: 39/39 pytest tests passed (20 regression + 19 new for friends + profile). Frontend: end-to-end flow verified across two users (Alice/Bob) — register, profile modal save, friends modal (all 3 tabs), search→add friend, badge=1 shows, accept request, chat-with-friend opens conversation, send message, audio call modal now renders with media-error state (resolves iteration 1 issue).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/friends/request (auto-accept branch)", "issue": "When status is 'pending_in', endpoint returns the accept_friend_request_internal payload {status:'friends', user:{...}} which has a different shape than the normal {status:'pending_out', request:{...}} response. Frontend should be aware of this dual return shape."},
+      {"endpoint": "POST /api/friends/request", "issue": "On auto-accept, only the OTHER side gets the 'friend_request_accepted' WS event. The caller learns via HTTP response only — acceptable, but worth documenting."},
+      {"endpoint": "GET /api/friends/status/{id}", "issue": "Returns 'self' string when other_id == me_id, but no endpoint test covers it. Cosmetic."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Date separator detection", "issue": "Could not confirm 'Today/Yesterday' label was rendered above the freshly-sent message via body.innerText check (likely race with React re-render). Code in ChatWindow.jsx (sameDay/dateLabel + showDateSep) is correctly implemented; visual verification recommended.", "affected_selectors": ["span text Today/Yesterday inside message feed"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Document the dual-shape response of POST /api/friends/request (pending vs auto-accepted)",
+    "(Optional, from iter 1) Decide cookie vs Bearer auth: CORS allow_origins='*' with allow_credentials=False makes the httpOnly cookie unusable cross-origin",
+    "(Optional, from iter 1) Sanitize $regex input in /api/users/search to avoid ReDoS (use re.escape)"
+  ],
+  "critical_code_review_comments": [
+    "server.py is now ~625 lines — consider splitting into routers (auth, users, conversations, messages, friends, ws)",
+    "Friend request idempotency: rejecting then re-requesting works because the rejected row is left in DB (not cleaned), but a second 'pending_out' check only looks for status:'pending', so behavior is correct. However friend_requests collection grows unbounded with rejected rows — add cleanup or unique compound index on (from,to,status='pending').",
+    "PATCH /api/users/me accepts unbounded base64 avatar string — add max length validation (e.g., reject >2 MB) to prevent DB bloat / DoS",
+    "WebSocket handler still does ws.close(code=4401) without ws.accept() first; clients see generic handshake error rather than 4401 code",
+    "friendship_status() does 3 sequential DB queries per call; in /api/users/search it runs once per result, making search O(N) DB roundtrips. Consider batching."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py (added 19 tests: profile PATCH, friends CRUD, friendship_status in search, auto-accept, WS friend_request_new event)"
+  ],
+  "success_rate": {"backend": "100% (39/39)", "frontend": "100% on critical flows"},
+  "test_credentials": "Tests register fresh users with uuid suffix per run (test_alice_<uuid>, test_bob_<uuid>, test_charlie_<uuid>, test_dave_<uuid>, test_eve_<uuid>, test_frank_<uuid>, test_third_<uuid>); FE test uses fe_alice_<uuid>/fe_bob_<uuid>",
+  "seed_data_creation": "No fixed seed data; deterministic uuid suffix per pytest run avoids DB pollution",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend tests at /app/backend/tests/backend_test.py — all 39 deterministic. Friend system fully working incl. auto-accept on mutual request, WS friend_request_new event, GET /api/users/search includes friendship_status. Profile PATCH /api/users/me persists name/bio/avatar. CallModal regression from iter 1 is RESOLVED — modal now renders before getUserMedia and surfaces 'Can't access mic/camera' state with end-call button. Sidebar testids open-profile-button, open-friends-button, friend-requests-badge, new-chat-button, logout-button all present. Friend modal tabs friends-tab-friends/requests/search work; add-friend-{username}, accept-request-{username}, chat-friend-{username} testids all functional.",
+  "rca of the issue": "No blocking issues this iteration. Minor concern: date separator visual presence couldn't be string-matched after a single freshly-sent message — code logic in ChatWindow.jsx is correct, likely a test-timing race. Not reproducible as a bug."
+}

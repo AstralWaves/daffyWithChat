@@ -5,14 +5,33 @@ import Sidebar from "./Sidebar";
 import ChatWindow from "./ChatWindow";
 import CallModal from "./CallModal";
 
+// Synthesized notification ping (no asset needed)
+function playPing() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.18);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.28);
+    setTimeout(() => ctx.close(), 400);
+  } catch (_) {}
+}
+
 export default function ChatApp() {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [messages, setMessages] = useState({}); // conv_id -> [messages]
   const [typingMap, setTypingMap] = useState({}); // conv_id -> {user_id: timeoutId}
   const [presence, setPresence] = useState({}); // user_id -> bool
-  const [callState, setCallState] = useState(null); // { mode: 'incoming'|'outgoing'|'active', kind: 'audio'|'video', peer, offer? }
+  const [friendRequestsCount, setFriendRequestsCount] = useState(0);
+  const [callState, setCallState] = useState(null);
 
   const wsRef = useRef(null);
   const callStateRef = useRef(null);
@@ -27,7 +46,14 @@ export default function ChatApp() {
     setPresence((prev) => ({ ...prev, ...p }));
   }, []);
 
-  useEffect(() => { loadConvs(); }, [loadConvs]);
+  const loadFriendRequests = useCallback(async () => {
+    try {
+      const res = await api.get("/friends/requests");
+      setFriendRequestsCount(res.data.length);
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => { loadConvs(); loadFriendRequests(); }, [loadConvs, loadFriendRequests]);
 
   // WebSocket connection
   useEffect(() => {
@@ -53,9 +79,13 @@ export default function ChatApp() {
           }
           return [c, ...prev.filter((_, i) => i !== idx)];
         });
-        // auto mark read if active
-        if (activeIdRef.current === m.conversation_id && m.sender_id !== user.id) {
-          api.get(`/conversations/${m.conversation_id}/messages`).catch(() => {});
+        // Sound + auto mark read
+        if (m.sender_id !== user.id) {
+          if (activeIdRef.current === m.conversation_id) {
+            api.get(`/conversations/${m.conversation_id}/messages`).catch(() => {});
+          } else {
+            playPing();
+          }
         }
       } else if (data.type === "conversation_new") {
         setConversations((prev) => {
@@ -107,6 +137,11 @@ export default function ChatApp() {
       } else if (data.type === "call_end" || data.type === "call_reject") {
         window.dispatchEvent(new CustomEvent("call-signal", { detail: data }));
         setCallState(null);
+      } else if (data.type === "friend_request_new") {
+        setFriendRequestsCount((c) => c + 1);
+        playPing();
+      } else if (data.type === "friend_request_accepted") {
+        // Could show a toast — keep minimal
       }
     };
 
@@ -177,6 +212,8 @@ export default function ChatApp() {
         presence={presence}
         onOpen={openConversation}
         onStartConversation={startConversation}
+        onUserUpdated={(u) => setUser(u)}
+        friendRequestsCount={friendRequestsCount}
       />
       <ChatWindow
         user={user}
