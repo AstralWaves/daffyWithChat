@@ -80,6 +80,23 @@ mongod --dbpath ~/data/db
 docker run -d --name ember-mongo -p 27017:27017 -v ember_mongo_data:/data/db mongo:7
 ```
 
+### 3a. (Optional) Load sample database
+
+To start with sample users and conversations, restore the included dump:
+
+```bash
+mongorestore --uri="mongodb://localhost:27017" --gzip --archive=database/ember_chat.archive
+```
+
+…or run the Python seed script for a fresh sample:
+
+```bash
+cd backend
+python seed_db.py
+```
+
+See `database/README.md` and `database/schema.md` for full details.
+
 ### 4. Start the backend
 
 In a new terminal:
@@ -130,8 +147,14 @@ Frontend runs at **http://localhost:3000**. Browser should open automatically.
 ember-chat/
 ├── backend/
 │   ├── server.py              # FastAPI app (auth, users, conversations, messages, friends, ws)
+│   ├── seed_db.py             # Sample data seeder (run: python seed_db.py [--reset])
 │   ├── requirements.txt       # Python dependencies
 │   └── .env                   # Backend config (you create this)
+│
+├── database/
+│   ├── ember_chat.archive     # Binary mongodump backup with sample data
+│   ├── schema.md              # Detailed collection/field documentation
+│   └── README.md              # How to restore/seed
 │
 ├── frontend/
 │   ├── src/

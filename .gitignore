@@ -27,6 +27,10 @@ test_reports/
 memory/
 auth_testing.md
 design_guidelines.json
+
+# Keep the database/ folder INCLUDED (sample dump for new users)
+!database/
+!database/*
 -e 
 # Environment and credential files
 .env
