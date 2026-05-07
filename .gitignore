@@ -1,18 +1,29 @@
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
-credentials.json
-*.pem
-*.key
-.credentials
+# Files / folders that should NOT be committed to GitHub
+
+# Python
+backend/venv/
+backend/__pycache__/
+backend/.env
+**/__pycache__/
+*.pyc
+
+# Node
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/yarn-error.log
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+
+# Test reports / memory (local only)
+test_reports/
+memory/
+auth_testing.md
+design_guidelines.json
