@@ -1,0 +1,121 @@
+{
+  "theme": "light",
+  "archetype": "Organic & Earthy",
+  "typography": {
+    "font_families": {
+      "heading": "'Cabinet Grotesk', sans-serif",
+      "body": "'Satoshi', sans-serif",
+      "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      "import_url": "https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,500,700,400,900&f[]=satoshi@900,700,500,400&display=swap"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-medium",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-medium",
+      "h3": "text-xl sm:text-2xl tracking-tight font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm tracking-wide text-secondary",
+      "overline": "text-xs uppercase tracking-[0.2em] font-semibold"
+    }
+  },
+  "colors": {
+    "background": {
+      "base": "#F9F8F6",
+      "sidebar": "#F0EBE1",
+      "card": "#FFFFFF",
+      "overlay": "bg-black/40 backdrop-blur-sm"
+    },
+    "text": {
+      "primary": "#1C1C1A",
+      "secondary": "#7A7A75",
+      "inverse": "#F9F8F6",
+      "accent": "#C85A47"
+    },
+    "brand": {
+      "primary": "#C85A47",
+      "primary_hover": "#B34D3C",
+      "secondary": "#38423B",
+      "online": "#788A6F"
+    },
+    "ui": {
+      "border": "#E5E0D8",
+      "divider": "#E5E0D8",
+      "bubble_sent": "#38423B",
+      "bubble_received": "#FFFFFF",
+      "input_bg": "#FFFFFF"
+    }
+  },
+  "layout_spacing": {
+    "sidebar_width": "360px",
+    "padding_standard": "p-6",
+    "padding_loose": "p-12",
+    "border_radius": {
+      "button": "rounded-full",
+      "card": "rounded-3xl",
+      "bubble": "rounded-2xl",
+      "avatar": "rounded-full"
+    }
+  },
+  "components": {
+    "auth": {
+      "layout": "Grid split layout: lg:grid-cols-2. Left side form centered, right side image cover.",
+      "inputs": "Flat white background, no outer border, rounded-xl, high padding (px-4 py-3). focus:ring-1 focus:ring-[#C85A47]"
+    },
+    "sidebar": {
+      "style": "bg-[#F0EBE1] border-r border-[#E5E0D8]. Cardless list items.",
+      "search_bar": "Rounded-full, bg-white/60 focus-within:bg-white, with search icon on left. px-4 py-2 text-sm",
+      "chat_item": "Flex row, p-4, hover:bg-white/50 transition-colors cursor-pointer rounded-2xl mx-2",
+      "unread_badge": "bg-[#C85A47] text-white text-[10px] font-bold px-2 py-0.5 rounded-full"
+    },
+    "chat_window": {
+      "header": "Flex justify-between items-center p-6 border-b border-[#E5E0D8] bg-[#F9F8F6]/80 backdrop-blur-md sticky top-0 z-10",
+      "message_feed": "Flex flex-col gap-6 p-6 overflow-y-auto bg-[#F9F8F6]",
+      "bubble_sent": "bg-[#38423B] text-[#F9F8F6] rounded-2xl rounded-br-sm px-5 py-3 max-w-[75%] shadow-sm",
+      "bubble_received": "bg-[#FFFFFF] text-[#1C1C1A] border border-[#E5E0D8] rounded-2xl rounded-bl-sm px-5 py-3 max-w-[75%] shadow-sm",
+      "input_area": "p-6 bg-[#F9F8F6] border-t border-[#E5E0D8]",
+      "input_container": "flex items-center gap-3 bg-[#FFFFFF] border border-[#E5E0D8] p-2 rounded-full shadow-sm"
+    },
+    "video_call": {
+      "modal_overlay": "Fixed inset-0 z-50 bg-[#1C1C1A]/80 backdrop-blur-xl flex flex-col p-6",
+      "grid": "Bento-style: Main speaker spans most width, others in sidebar. Grid gap-4.",
+      "controls": "Floating pill at bottom center: flex gap-4 bg-[#1C1C1A]/90 p-4 rounded-full backdrop-blur-md border border-white/10"
+    }
+  },
+  "motion": {
+    "hover": "transition-all duration-300 ease-out",
+    "message_enter": "framer-motion initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}",
+    "modal_enter": "framer-motion initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}"
+  },
+  "icons": {
+    "library": "lucide-react",
+    "instructions": "Use lucide-react. Stroke width 1.5 for elegance."
+  },
+  "accessibility": {
+    "focus_states": "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C85A47] focus-visible:ring-offset-2",
+    "testing_ids": "Mandatory data-testid on all interactive elements. Example: 'login-button', 'chat-item-username', 'video-call-button', 'message-input', 'send-message-button'"
+  },
+  "media": {
+    "auth_background": {
+      "url": "https://images.unsplash.com/photo-1712280473267-28c10230e95c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGFyY2hpdGVjdHVyYWwlMjBuZXV0cmFsJTIwdGVycmFjb3R0YSUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzc4MTg2ODk5fDA&ixlib=rb-4.1.0&q=85",
+      "description": "Abstract terracotta and architectural shapes for the login split screen."
+    },
+    "empty_state": {
+      "url": "https://images.unsplash.com/photo-1760622728583-b51cf72e9987?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwemVuJTIwZ2FyZGVuJTIwY2FsbSUyMGVtcHR5fGVufDB8fHx8MTc3ODE4Njg5OHww&ixlib=rb-4.1.0&q=85",
+      "description": "Minimalist zen building and water reflection for 'No chats' state."
+    },
+    "avatars": [
+      "https://images.unsplash.com/photo-1639676710027-0b15d0d7648a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHw0fHxtaW5pbWFsaXN0JTIwcG9ydHJhaXQlMjBwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHNvZnQlMjBsaWdodGluZ3xlbnwwfHx8fDE3NzgxODY4ODZ8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1544334599-eba0d8934b6f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwzfHxtaW5pbWFsaXN0JTIwcG9ydHJhaXQlMjBwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHNvZnQlMjBsaWdodGluZ3xlbnwwfHx8fDE3NzgxODY4ODZ8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1666577624653-b6f0043fed0e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwcG9ydHJhaXQlMjBwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHNvZnQlMjBsaWdodGluZ3xlbnwwfHx8fDE3NzgxODY4ODZ8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1774897795948-851e87f6d638?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwcG9ydHJhaXQlMjBwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHNvZnQlMjBsaWdodGluZ3xlbnwwfHx8fDE3NzgxODY4ODZ8MA&ixlib=rb-4.1.0&q=85"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Use Tailwind CSS for styling. Implement the fonts via Fontshare CDN.",
+    "For the video call screen, use conditional rendering with a backdrop blur over the chat interface.",
+    "Ensure 'Cabinet Grotesk' is applied to headings and 'Satoshi' for the body text.",
+    "Implement real-time indicators like the 'Active now' status dot using the provided Sage Green color (#788A6F).",
+    "Use the specific media URLs provided for the auth background, avatars, and empty states. Do not use generic placeholders.",
+    "The UI follows the 'Organic & Earthy' (Archetype 1) theme which avoids the typical 'tech blue' or 'whatsapp green' for an architectural, warm, premium look. Respect the specific spacing and 1px border guidelines to maintain the high-end feel.",
+    "All components must be functional. Add 'data-testid' attributes like 'data-testid=\"login-form-submit-button\"' to all interactive elements."
+  ]
+}
