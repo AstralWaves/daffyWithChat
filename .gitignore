@@ -55,3 +55,12 @@ credentials.json
 !database/ember_chat.archive
 !database/README.md
 !database/schema.md
+-e 
+# Environment and credential files
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
