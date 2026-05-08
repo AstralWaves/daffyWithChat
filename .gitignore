@@ -1,42 +1,57 @@
-# Files / folders that should NOT be committed to GitHub
+# ============================================
+# Files NOT committed to GitHub
+# ============================================
 
-# Python
+# --- Python ---
 backend/venv/
+backend/env/
 backend/__pycache__/
-backend/.env
 **/__pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
 
-# Node
+# --- Node ---
 frontend/node_modules/
 frontend/build/
-frontend/.env
 frontend/yarn-error.log
+frontend/npm-debug.log*
 
-# Editor
+# --- Real env files (KEEP .env.example tracked) ---
+backend/.env
+frontend/.env
+.env
+
+# --- Editor / OS ---
 .vscode/
 .idea/
 *.swp
 .DS_Store
+Thumbs.db
 
-# Logs
+# --- Logs ---
 *.log
+logs/
 
-# Test reports / memory (local only)
+# --- Local only ---
 test_reports/
 memory/
 auth_testing.md
 design_guidelines.json
 
-# Keep the database/ folder INCLUDED (sample dump for new users)
-!database/
-!database/*
--e 
-# Environment and credential files
-.env
-.env.*
-*.env
+# --- Credentials ---
 credentials.json
 *.pem
 *.key
 .credentials
+
+# ============================================
+# Files we EXPLICITLY want to track
+# ============================================
+!backend/.env.example
+!frontend/.env.example
+!database/
+!database/ember_chat.archive
+!database/README.md
+!database/schema.md

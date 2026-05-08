@@ -224,6 +224,22 @@ You can register more users via the UI.
 
 ---
 
+## 🩺 Quick "is everything OK?" check
+
+Run the doctor script to verify all files, dependencies, and MongoDB are in order:
+
+```bash
+# Linux / Mac
+bash doctor.sh
+
+# Windows (use Git Bash or WSL)
+bash doctor.sh
+```
+
+It checks: prerequisites, all source files, Python packages, Node modules, MongoDB connection — and tells you exactly what's missing and how to fix it.
+
+---
+
 ## 🛠️ Troubleshooting
 
 **Backend can't connect to MongoDB:**  
@@ -231,6 +247,21 @@ Make sure `mongod` is running and `MONGO_URL` in `backend/.env` is reachable. Te
 
 **Frontend shows "Network Error" or can't login:**  
 Check `frontend/.env` has the correct `REACT_APP_BACKEND_URL` (no trailing slash, no `/api` suffix). Restart `yarn start` after changing the `.env`.
+
+**`.env.example` files missing after git clone:**  
+Pull the latest commit. The `.gitignore` was updated to track these template files — older commits may have excluded them by mistake.
+
+**`yarn start` fails with "package.json not found":**  
+You're not in the `frontend/` folder. Run `cd frontend` first.
+
+**`uvicorn` not found:**  
+Activate the venv first: `source backend/venv/bin/activate` (Linux/Mac) or `backend\venv\Scripts\activate` (Windows). Or call it directly: `backend/venv/bin/uvicorn server:app --reload --port 8001`.
+
+**Module not found errors (Python):**  
+Re-install deps: `cd backend && venv/bin/pip install -r requirements.txt`
+
+**Module not found errors (JavaScript):**  
+Delete `frontend/node_modules` and run `yarn install` again.
 
 **Audio/video call fails:**  
 Calls need browser mic/camera permission. Click "Allow" when the browser prompts. Calls work over `localhost` and `https://`. They will NOT work over plain `http://` on a remote host — browsers block media devices on insecure origins.
