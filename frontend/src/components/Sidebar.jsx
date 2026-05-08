@@ -40,7 +40,7 @@ function NewChatModal({ onClose, onStartConversation, currentUserId }) {
   const [results, setResults] = useState([]);
   const [selected, setSelected] = useState([]);
   const [groupName, setGroupName] = useState("");
-  const [isGroup, setIsGroup] = useState(false);
+  const isGroup = false;
 
   useEffect(() => {
     if (!q) { setResults([]); return; }
